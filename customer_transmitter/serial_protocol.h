@@ -1,0 +1,33 @@
+#define HEADER_SIZE 3
+
+typedef enum MainHeader {
+	CHANGE_MODE,
+	GET_FIRMWARE_VERSION,
+	GET_HARDWARE_VERSION,
+	GET_SERIAL_NUMBER,
+	GET_BATTERY,
+	TRANSMITTER,
+	RECEIVER,
+	HUB,
+	LOCAL_UPGRADE,
+	NAK = 0xFE,
+	ACK = 0xFF
+} MainHeader_t;
+
+typedef enum ChangeMode {
+	TRANSMITTER_MODE,
+	RECEIVER_MODE,
+	HUB_MODE
+} ChangeMode_t;
+
+typedef enum Transmitter {
+	SET_TRANSMITTER_VALUE,
+	GET_TRANSMITTER_VALUE,
+	TRANSMIT_NOW
+} Transmitter_t;
+
+typedef enum TransmitterValues {
+	TRANSMITTER_PERIOD,
+	TRANSMITTER_OUTPUT_POWER,
+	TRANSMITTER_PAYLOAD,
+} TransmitterValues_t;
