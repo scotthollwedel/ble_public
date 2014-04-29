@@ -423,6 +423,41 @@
               <FileType>5</FileType>
               <FilePath>C:\Keil\ARM\Device\Nordic\nrf51822\Source\keil_arm_uv4.lnt</FilePath>
             </File>
+            <File>
+              <FileName>ble.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\ble.c</FilePath>
+            </File>
+            <File>
+              <FileName>serial.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\serial.c</FilePath>
+            </File>
+            <File>
+              <FileName>hub.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\hub.c</FilePath>
+            </File>
+            <File>
+              <FileName>gpio.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\gpio.c</FilePath>
+            </File>
+            <File>
+              <FileName>time.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\time.c</FilePath>
+            </File>
+            <File>
+              <FileName>radio.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\radio.c</FilePath>
+            </File>
+            <File>
+              <FileName>state_variables.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\state_variables.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
