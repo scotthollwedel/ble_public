@@ -32,4 +32,4 @@ main.bin: main.out
 main.hex: main.out
 	$(OBJCOPY) -O ihex main.out main.hex
 clean:
-	rm -f *.o *.out *.hex *.seg *.map *.bin 
+	rm -f *.o *.out *.hex *.seg *.map *.bin JLink.log 
