@@ -2,7 +2,7 @@
 #define STATE_VARIABLES_H
 #include <stdint.h>
 
-#define LF_CLOCK_PERIOD         		 32768
+#define LF_CLOCK_PERIOD                  32768
 #define HF_CLOCK_PERIOD                  16000000
 #define LOOP_PERIOD_IN_MS                100
 

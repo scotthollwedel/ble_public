@@ -20,10 +20,10 @@ extern uint8_t * pilot;
 //Configuration RTC with 
 void rtc_init()
 {
-	NRF_RTC0->CC[0] = LF_CLOCK_PERIOD*LOOP_PERIOD_IN_MS/1000;
-	NRF_RTC0->INTENSET = (RTC_INTENSET_COMPARE0_Enabled << RTC_INTENSET_COMPARE0_Pos);
-	NRF_RTC0->TASKS_START = 1;
-	NVIC_EnableIRQ(RTC0_IRQn);
+    NRF_RTC0->CC[0] = LF_CLOCK_PERIOD*LOOP_PERIOD_IN_MS/1000;
+    NRF_RTC0->INTENSET = (RTC_INTENSET_COMPARE0_Enabled << RTC_INTENSET_COMPARE0_Pos);
+    NRF_RTC0->TASKS_START = 1;
+    NVIC_EnableIRQ(RTC0_IRQn);
 }
 
 //Configuration TIMER0 with a 31250 us period
@@ -53,7 +53,7 @@ void ModeTransition()
                 break;
             case RECEIVER_MODE:
                 ble_init();
-                NRF_RADIO->SHORTS = (RADIO_SHORTS_READY_START_Enabled << RADIO_SHORTS_READY_START_Pos);				
+                NRF_RADIO->SHORTS = (RADIO_SHORTS_READY_START_Enabled << RADIO_SHORTS_READY_START_Pos);             
                 NRF_RADIO->FREQUENCY = getBLERFChannel(1);
                 NRF_RADIO->DATAWHITEIV = getBLELogicalChannel(1) + 0x40;
                 NRF_RADIO->EVENTS_READY = 0U;
@@ -75,7 +75,7 @@ void HandleModePeriodicBehavior()
             break;
         case TRANSMITTER_MODE:
             if(((count != 0) && (count % getBLEBeaconTransmitPeriod())) == 0) {
-                sendBLEBeacon(0);
+                //sendBLEBeacon(0);
             }
             break;
         case RECEIVER_MODE:
@@ -100,29 +100,30 @@ void HandleModePeriodicBehavior()
     }
 }
 
+/* This is the main big timed loop */
 void RTC0_IRQHandler(void)
 {
-	if((NRF_RTC0->EVENTS_COMPARE[0]) && 
-		 (NRF_RTC0->INTENSET & RTC_INTENSET_COMPARE0_Msk)) {
-		NRF_RTC0->EVENTS_COMPARE[0] = 0;
+    if((NRF_RTC0->EVENTS_COMPARE[0]) && 
+         (NRF_RTC0->INTENSET & RTC_INTENSET_COMPARE0_Msk)) {
+        NRF_RTC0->EVENTS_COMPARE[0] = 0;
              
         //Change operating mode
         ModeTransition();
         HandleModePeriodicBehavior();
              
+        nrf_gpio_pin_toggle(LED_2);
         NRF_RTC0->CC[0] += LF_CLOCK_PERIOD*LOOP_PERIOD_IN_MS/1000;
         count++;
-        //nrf_gpio_pin_toggle(LED_2);
-	}
+    }
 }
 
 void TIMER0_IRQHandler(void) 
 {
-	if((NRF_TIMER0->EVENTS_COMPARE[0]) &&
-		  (NRF_TIMER0->INTENSET & TIMER_INTENSET_COMPARE0_Msk)) 
+    if((NRF_TIMER0->EVENTS_COMPARE[0]) &&
+          (NRF_TIMER0->INTENSET & TIMER_INTENSET_COMPARE0_Msk)) 
     {
         NRF_TIMER0->EVENTS_COMPARE[0] = 0;
-         SystemMode_t mode = getMode();
+        SystemMode_t mode = getMode();
         if(mode == TRANSMITTER_MODE) {
             //Start transmit for BLE transmit mode after correct time
             NRF_RADIO->EVENTS_READY = 0U;
@@ -131,5 +132,5 @@ void TIMER0_IRQHandler(void)
         else if(mode == HUB_MODE) {
             NRF_RADIO->TASKS_DISABLE = 1;//Turn off the radio
         }
-	}
+    }
 }
