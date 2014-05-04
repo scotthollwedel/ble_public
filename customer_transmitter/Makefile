@@ -14,10 +14,10 @@ default: main.bin main.hex
 .c.o:
 	$(CC) $(LOCAL_CFLAGS) -I$(INCLUDE) $< -c $<
 
-system_nrf51.o: $(PROJ)/system_nrf51.c 
+system_nrf51.o: $(PROJ)/Libs/system_nrf51.c 
 	$(CC) $(CFLAGS)  -I$(INCLUDE) -c $< 
 
-nrf_delay.o: $(PROJ)/nrf_delay.c
+nrf_delay.o: $(PROJ)/Libs/nrf_delay.c
 	$(CC) $(CFLAGS) -I$(INCLUDE) -c $< 
 
 startup_nrf51.o: $(PROJ)/startup_nrf51.s 
