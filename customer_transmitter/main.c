@@ -37,13 +37,13 @@ int main(void)
     clock_init();
     init_state_variables();
     gpio_init();
-	radio_init();
-	timer0_init();
-	rtc_init();
-	uart_init();
-	nrf_gpio_pin_set(LED_7);
+    radio_init();
+    timer0_init();
+    rtc_init();
+    uart_init();
+    nrf_gpio_pin_set(LED_7);
     while(true) {
         __WFI();
-	}
+    }
 }
 
