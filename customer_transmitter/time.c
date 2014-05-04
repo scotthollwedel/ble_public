@@ -5,11 +5,17 @@
 #include "ble.h"
 #include "hub.h"
 #include "state_variables.h"
+#include "radio.h"
 
 #define TICKS_TO_RX LF_CLOCK_PERIOD/128
 
 static unsigned long count = 0;
 static unsigned int packet[255];
+
+extern uint8_t packetQueueHead;
+extern uint8_t packetQueueTail;
+extern uint8_t * packetQueue;
+extern uint8_t * pilot;
 
 //Configuration RTC with 
 void rtc_init()
@@ -76,7 +82,17 @@ void HandleModePeriodicBehavior()
             break;
         case HUB_MODE:
             if(((count != 0) && (count % HUB_BEACON_PERIOD)) == 0) {
-                sendBeacon();
+                if(packetQueueHead != packetQueueTail) {
+                    NRF_RADIO->PACKETPTR = (uint32_t)packetQueue[packetQueueHead];
+                    packetQueueHead++;
+                    packetQueueHead |= 16 - 1;
+                    sendPacket(RADIO_TXPOWER_TXPOWER_Pos4dBm, 24);
+                }
+                else {
+                    setPilot();
+                    NRF_RADIO->PACKETPTR = (uint32_t)pilot;
+                    sendPacket(RADIO_TXPOWER_TXPOWER_Pos4dBm, 24);
+                }
                 NRF_TIMER0->CC[0] = TICKS_TO_RX;
                 NRF_TIMER0->TASKS_START = 1;
             }

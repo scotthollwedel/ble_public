@@ -1,4 +1,6 @@
 #include <stdint.h>
+#include <string.h>
+#include "ota_protocol.h"
 #include "nrf_gpio.h"
 #include "radio.h"
 
@@ -7,11 +9,23 @@
 #define PACKET_S0_FIELD_SIZE             1  /**< Packet S0 field size in bytes. */
 #define PACKET_LENGTH_FIELD_SIZE         6  /**< Packet length field size in bits. */
 #define PACKET_BASE_ADDRESS_LENGTH       3  //!< Packet base address length field size in bytes - 1
-#define PACKET_PAYLOAD_MAXSIZE           37
 
 uint8_t hub_tx[255];
 uint8_t hub_rx[255];
 uint8_t hub_channel = 24;
+
+uint8_t packetQueueHead = 0;
+uint8_t packetQueueTail = 0;
+uint8_t packetQueue[16][HUB_PACKET_MAX_SIZE];
+uint8_t pilot[HUB_PACKET_MAX_SIZE];
+
+struct Nodes
+{
+    uint8_t nodeAddress[6];
+};
+struct Nodes addressTable[8];
+
+uint8_t nodeCount = 0;
 
 void hub_init()
 {
@@ -31,20 +45,75 @@ void hub_init()
     NRF_RADIO->CRCPOLY = 0x065B;  
 }
 
-void sendBeacon() 
+void setPilot() 
 {
-    uint8_t packet[] = {0x00, 10, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    hub_tx[0] = 0x00;//Source Node ID = 0??
-    hub_tx[1] = 10; //Payload size
-    hub_tx[2] = 0x00;//Empty field for S1
-    hub_tx[3] = 0x00; //Beacon
-    hub_tx[4] = 0xFF; //Broadcast message
+    pilot[0] = 0x00;//ADV_IND w/ random S0
+    pilot[1] = sizeof(struct PilotMessage); //Payload size
+    pilot[2] = 0x00;//Empty field for S1
+    struct PilotMessage * pilotMessage = (struct PilotMessage *)&pilot[3];
+    pilotMessage->messageType = PILOT;
+    pilotMessage->messageId = 0;
+    pilotMessage->protocolNumber = 0;
+    pilotMessage->sync = 1;
     //Base Address
     for(int i = 0; i < 4; i++)
-        packet[5 + i] = NRF_FICR->DEVICEADDR[0] >> (i*8);
+        pilotMessage->sourceAddress[i] = NRF_FICR->DEVICEADDR[0] >> (i*8);
     for(int i = 0; i < 2 ; i++)
-        packet[9 + i] = NRF_FICR->DEVICEADDR[1] >> (i*8);
-    hub_tx[11] = 0x00; // Protocol number
-    hub_tx[12] = 0x00; //Sync
-    sendPacket(RADIO_TXPOWER_TXPOWER_Pos4dBm, 24, packet);
+        pilotMessage->sourceAddress[4 + i] = NRF_FICR->DEVICEADDR[1] >> (i*8);
+}
+
+void handlePacket()
+{
+    uint8_t * packet = hub_rx;
+    MessageType_t messageType = (MessageType_t)packet[3];
+    if(messageType == JOIN) {
+        struct JoinMessage * joinMessage = (struct JoinMessage *)&packet[3];
+        int found = 0;
+        for(int i = 0; i < nodeCount && found == 0; i++) {
+            if(memcmp(addressTable[i].nodeAddress, joinMessage->sourceAddress, 6) == 0)
+            {
+                if(packetQueueTail + 1 != packetQueueHead) {
+                    uint8_t * newPacket = packetQueue[packetQueueTail];
+                    packetQueueTail++;
+                    packetQueueTail |= 16 - 1;
+                    
+                    newPacket[0] =  0x00;
+                    newPacket[1] = sizeof(struct JoinAckMessage);
+                    newPacket[2] = 0x00;
+                    
+                    struct JoinAckMessage * joinAckMessage = (struct JoinAckMessage *)&newPacket[3];
+                    joinAckMessage->messageType = JOIN_ACK;
+                    joinAckMessage->messageId = 0;
+                    memmove(joinAckMessage->destinationAddress, joinMessage->sourceAddress, 6);
+                    memmove(joinAckMessage->sourceAddress, joinMessage->destinationAddress, 6);
+                    joinAckMessage->assignedNodeId = i;
+                    found = 1;
+                }
+            }
+        }
+        if(0 == found)
+        {
+            if(packetQueueTail + 1 != packetQueueHead) {
+                uint8_t * newPacket = packetQueue[packetQueueTail];
+                packetQueueTail++;
+                packetQueueTail |= 16 - 1;
+                
+                newPacket[0] =  0x00;
+                newPacket[1] = sizeof(struct JoinAckMessage);
+                newPacket[2] = 0x00;
+                
+                struct JoinAckMessage * joinAckMessage = (struct JoinAckMessage *)&newPacket[3];
+                joinAckMessage->messageType = JOIN_ACK;
+                joinAckMessage->messageId = 0;
+                memmove(joinAckMessage->destinationAddress, joinMessage->sourceAddress, 6);
+                memmove(joinAckMessage->sourceAddress, joinMessage->destinationAddress, 6);
+                joinAckMessage->assignedNodeId = nodeCount;
+            }
+            nodeCount++;
+        }
+    }
+    else if (messageType == GET_VALUE_RESPONSE) {
+    }
+    else if(messageType == RESPONSE) {
+    }
 }

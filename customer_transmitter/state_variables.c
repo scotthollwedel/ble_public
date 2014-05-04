@@ -59,6 +59,8 @@ void setBLEBeaconPayload(const uint8_t * beaconPayload, const unsigned int beaco
 
 void getBLEBeaconPayload(const uint8_t * beaconPayload, const unsigned int * beaconPayloadSize)
 {
+    (void)beaconPayload;
+    (void)beaconPayloadSize;
     beaconPayload = bleStateVariables.BeaconPayload;
     beaconPayloadSize = &bleStateVariables.BeaconPayloadSize;
 }

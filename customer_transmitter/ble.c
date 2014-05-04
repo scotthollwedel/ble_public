@@ -11,6 +11,8 @@
 #define PACKET_BASE_ADDRESS_LENGTH       3  //!< Packet base address length field size in bytes - 1
 #define PACKET_PAYLOAD_MAXSIZE           37
 
+uint8_t ble_beacon[255];
+
 void ble_init()
 {
     NRF_RADIO->MODE      = RADIO_MODE_MODE_Ble_1Mbit;
@@ -32,22 +34,22 @@ void ble_init()
 
 void sendBLEBeacon(int index)
 {
-    uint8_t * beacon_payload;
+    uint8_t * beacon_payload = NULL;
     unsigned int beacon_payload_size;
-    uint8_t packet[255];
     
     getBLEBeaconPayload(beacon_payload, &beacon_payload_size);
     
-    packet[0] = 0x40;//ADV_IND w/ random S0
-    packet[1] = 6 + beacon_payload_size; //Payload size
-    packet[2] = 0x00;//Empty field for S1
+    ble_beacon[0] = 0x40;//ADV_IND w/ random S0
+    ble_beacon[1] = 6 + beacon_payload_size; //Payload size
+    ble_beacon[2] = 0x00;//Empty field for S1
     
     for(int i = 0; i < 4; i++)
-        packet[3 + i] = NRF_FICR->DEVICEADDR[0] >> (i*8);
+        ble_beacon[3 + i] = NRF_FICR->DEVICEADDR[0] >> (i*8);
     for(int i = 0; i < 2 ; i++)
-        packet[7 + i] = NRF_FICR->DEVICEADDR[1] >> (i*8);
+        ble_beacon[7 + i] = NRF_FICR->DEVICEADDR[1] >> (i*8);
 
-    memcpy(&packet[9], beacon_payload, beacon_payload_size);
+    memcpy(&ble_beacon[9], beacon_payload, beacon_payload_size);
+    NRF_RADIO->PACKETPTR = (uint32_t)ble_beacon;
     NRF_RADIO->TXPOWER   = getBLEBeaconTransmitPower();
     NRF_RADIO->SHORTS = (RADIO_SHORTS_READY_START_Enabled << RADIO_SHORTS_READY_START_Pos) |
                         (RADIO_SHORTS_END_DISABLE_Enabled << RADIO_SHORTS_END_DISABLE_Pos);

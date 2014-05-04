@@ -8,6 +8,8 @@
 #include "state_variables.h"
 #include "radio.h"
 
+extern uint8_t * hub_rx;
+
 void radio_init()
 {
     NRF_RADIO->INTENSET = (RADIO_INTENSET_DISABLED_Enabled << RADIO_INTENSET_DISABLED_Pos) | 
@@ -38,7 +40,9 @@ void RADIO_IRQHandler(void)
             }
             else if(mode == HUB_MODE) {
                 //Switch over to receive mode
-                nrf_gpio_pin_toggle(LED_1);
+                NRF_RADIO->PACKETPTR = (uint32_t)hub_rx;
+                NRF_RADIO->EVENTS_READY = 0;
+                NRF_RADIO->TASKS_RXEN = 1;
             }
 	}
 	if((NRF_RADIO->EVENTS_END) && 
@@ -53,15 +57,15 @@ void RADIO_IRQHandler(void)
                 NRF_RADIO->TASKS_START = 1;
             }
             else if(mode == HUB_MODE) {
+                handlePacket();
                 //Handle packets received OTA protocol
             }
 		}
 	}
 }
 
-void sendPacket(const uint8_t power, const uint8_t frequency, const uint8_t * packet)
+void sendPacket(const uint8_t power, const uint8_t frequency)
 {
-    NRF_RADIO->PACKETPTR = (uint32_t)packet;
     NRF_RADIO->TXPOWER = power;
     NRF_RADIO->SHORTS = (RADIO_SHORTS_READY_START_Enabled << RADIO_SHORTS_READY_START_Pos) |
                         (RADIO_SHORTS_END_DISABLE_Enabled << RADIO_SHORTS_END_DISABLE_Pos);

@@ -3,5 +3,6 @@
 #define HUB_BEACON_PERIOD 10
 
 void hub_init(void);
-void sendBeacon(void);
+void setPilot(void);
+void handlePacket(void);
 #endif
