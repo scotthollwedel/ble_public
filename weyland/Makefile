@@ -1,6 +1,7 @@
 CC          := arm-none-eabi-gcc
 OBJCOPY     := arm-none-eabi-objcopy
 SIZE        := arm-none-eabi-size
+GDB         := arm-none-eabi-gdb
 PROJ        := /home/scott/Projects/BLE/ARM
 INCLUDE     := /home/scott/Projects/BLE/ARM/Include
 BOARD       := BOARD_NRF6310
@@ -52,5 +53,10 @@ clean:
 
 flash: $(HEX)
 	$(JLINK) flash.jlink || true
+
+startdebug:
+	gnome-terminal -e "$(JLINKGDBSERVER) -port 5000"
+	sleep 1
+	gnome-terminal -e "$(GDB) $(ELF)"
 
 .PHONY: flash

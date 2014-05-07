@@ -19,7 +19,7 @@ SystemMode_t getNewMode(void);
 void setMode(const SystemMode_t mode);
 SystemMode_t getMode(void);
 void setBLEBeaconPayload(const uint8_t * beaconPayload, const unsigned int beaconPayloadSize);
-void getBLEBeaconPayload(const uint8_t * beaconPayload, const unsigned int * beaconPayloadSize);
+unsigned getBLEBeaconPayload(const uint8_t * beaconPayload);
 void setBLEBeaconTransmitPeriod(const uint8_t transmitPeriod);
 int getBLEBeaconTransmitPeriod(void);
 void setBLEBeaconTransmitPower(const uint8_t transmitPower);

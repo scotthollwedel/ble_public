@@ -43,11 +43,12 @@ void hub_init()
                       (RADIO_CRCCNF_SKIP_ADDR_Skip << RADIO_CRCCNF_SKIP_ADDR_Pos); //0x0103;
     NRF_RADIO->CRCINIT = 0x555555;
     NRF_RADIO->CRCPOLY = 0x065B;  
+    NRF_RADIO->FREQUENCY = hub_channel;
 }
 
 void setPilot() 
 {
-    pilot[0] = 0x00;//ADV_IND w/ random S0
+    pilot[0] = 0xAB;
     pilot[1] = sizeof(struct PilotMessage); //Payload size
     pilot[2] = 0x00;//Empty field for S1
     struct PilotMessage * pilotMessage = (struct PilotMessage *)&pilot[3];

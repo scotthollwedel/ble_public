@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <string.h>
 #include "boards.h"
 #include "nrf_gpio.h"
 #include "time.h"
@@ -6,16 +7,22 @@
 #include "hub.h"
 #include "state_variables.h"
 #include "radio.h"
+#include "ota_protocol.h"
 
-#define TICKS_TO_RX LF_CLOCK_PERIOD/128
+#define HUB_PACKET_MAX_SIZE 32
+#define PACKET_S1_FIELD_SIZE             2  /**< Packet S1 field size in bits. */
+#define PACKET_S0_FIELD_SIZE             1  /**< Packet S0 field size in bytes. */
+#define PACKET_LENGTH_FIELD_SIZE         6  /**< Packet length field size in bits. */
+#define PACKET_BASE_ADDRESS_LENGTH       3  //!< Packet base address length field size in bytes - 1
+
 
 static unsigned long count = 0;
-static unsigned int packet[255];
+static unsigned char packet[255];
 
 extern uint8_t packetQueueHead;
 extern uint8_t packetQueueTail;
 extern uint8_t * packetQueue;
-extern uint8_t * pilot;
+uint8_t pilot[32];
 
 //Configuration RTC with 
 void rtc_init()
@@ -75,7 +82,7 @@ void HandleModePeriodicBehavior()
             break;
         case TRANSMITTER_MODE:
             if(((count != 0) && (count % getBLEBeaconTransmitPeriod())) == 0) {
-                //sendBLEBeacon(0);
+                sendBLEBeacon(0);
             }
             break;
         case RECEIVER_MODE:
@@ -89,12 +96,22 @@ void HandleModePeriodicBehavior()
                     sendPacket(RADIO_TXPOWER_TXPOWER_Pos4dBm, 24);
                 }
                 else {
-                    setPilot();
+                    pilot[0] = 0x00;
+                    pilot[1] = sizeof(struct PilotMessage); //Payload size
+                    pilot[2] = 0x00;//Empty field for S1
+                    struct PilotMessage * pilotMessage = (struct PilotMessage *)&pilot[3];
+                    pilotMessage->messageType = PILOT;
+                    pilotMessage->messageId = 0;
+                    pilotMessage->protocolNumber = 0;
+                    pilotMessage->sync = 0;
+                    //Base Address
+                    for(int i = 0; i < 4; i++)
+                        pilotMessage->sourceAddress[i] = NRF_FICR->DEVICEADDR[0] >> (i*8);
+                    for(int i = 0; i < 2 ; i++)
+                        pilotMessage->sourceAddress[4 + i] = NRF_FICR->DEVICEADDR[1] >> (i*8);
                     NRF_RADIO->PACKETPTR = (uint32_t)pilot;
                     sendPacket(RADIO_TXPOWER_TXPOWER_Pos4dBm, 24);
                 }
-                NRF_TIMER0->CC[0] = TICKS_TO_RX;
-                NRF_TIMER0->TASKS_START = 1;
             }
             break;
     }
@@ -111,7 +128,7 @@ void RTC0_IRQHandler(void)
         ModeTransition();
         HandleModePeriodicBehavior();
              
-        nrf_gpio_pin_toggle(LED_2);
+        //nrf_gpio_pin_toggle(LED_2);
         NRF_RTC0->CC[0] += LF_CLOCK_PERIOD*LOOP_PERIOD_IN_MS/1000;
         count++;
     }
@@ -130,6 +147,8 @@ void TIMER0_IRQHandler(void)
             NRF_RADIO->TASKS_TXEN   = 1;
         }
         else if(mode == HUB_MODE) {
+            nrf_gpio_pin_toggle(LED_3);
+            NRF_RADIO->EVENTS_DISABLED = 0;
             NRF_RADIO->TASKS_DISABLE = 1;//Turn off the radio
         }
     }

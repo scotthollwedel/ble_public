@@ -23,7 +23,7 @@ struct BLEStateVariables {
 void init_state_variables()
 {
     //System State Variables
-    systemStateVariables.newMode = TRANSMITTER_MODE;
+    systemStateVariables.newMode = HUB_MODE;
     systemStateVariables.mode = IDLE_MODE;
     //BLE State Variables
     memset(bleStateVariables.BeaconPayload, 0,MAX_BLE_BEACON_PAYLOAD_SIZE);
@@ -57,10 +57,10 @@ void setBLEBeaconPayload(const uint8_t * beaconPayload, const unsigned int beaco
     bleStateVariables.BeaconPayloadSize = beaconPayloadSize;
 }
 
-void getBLEBeaconPayload(const uint8_t * beaconPayload, const unsigned int * beaconPayloadSize)
+unsigned getBLEBeaconPayload(const uint8_t * beaconPayload)
 {
     beaconPayload = bleStateVariables.BeaconPayload;
-    beaconPayloadSize = &bleStateVariables.BeaconPayloadSize;
+    return bleStateVariables.BeaconPayloadSize;
 }
 
 void setBLEBeaconTransmitPeriod(const uint8_t transmitPeriod)

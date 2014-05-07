@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <string.h>
+#include "boards.h"
 #include "nrf_gpio.h"
 #include "time.h"
 #include "ble.h"
@@ -15,6 +16,7 @@ uint8_t ble_beacon[255];
 
 void ble_init()
 {
+    NRF_RADIO->INTENSET = (RADIO_INTENSET_DISABLED_Enabled << RADIO_INTENSET_DISABLED_Pos); 
     NRF_RADIO->MODE      = RADIO_MODE_MODE_Ble_1Mbit;
     NRF_RADIO->BASE0       = 0x89BED600;  // Base address for prefix 0 converted to nRF24L series format
     NRF_RADIO->PREFIX0     = (0x8E << RADIO_RXADDRESSES_ADDR0_Pos);
@@ -35,9 +37,7 @@ void ble_init()
 void sendBLEBeacon(int index)
 {
     uint8_t * beacon_payload = NULL;
-    unsigned int beacon_payload_size;
-    
-    getBLEBeaconPayload(beacon_payload, &beacon_payload_size);
+    const unsigned int beacon_payload_size = getBLEBeaconPayload(beacon_payload);
     
     ble_beacon[0] = 0x40;//ADV_IND w/ random S0
     ble_beacon[1] = 6 + beacon_payload_size; //Payload size
