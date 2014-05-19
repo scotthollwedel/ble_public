@@ -7,13 +7,11 @@
 #include "serial_protocol.h"
 #include "ota_protocol.h"
 #include "version.h"
-#include "ble.h"
 #include "serial.h"
 #include "hub.h"
 #include "gpio.h"
 #include "time.h"
 #include "radio.h"
-#include "state_variables.h"
 
 
 void clock_init()
@@ -35,8 +33,8 @@ void clock_init()
 int main(void) 
 {
     clock_init();
-    init_state_variables();
     gpio_init();
+    hub_init();
     radio_init();
     timer0_init();
     rtc_init();

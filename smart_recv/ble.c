@@ -3,7 +3,6 @@
 #include "nrf_gpio.h"
 #include "time.h"
 #include "ble.h"
-#include "state_variables.h"
 
 #define PACKET_S1_FIELD_SIZE             2  /**< Packet S1 field size in bits. */
 #define PACKET_S0_FIELD_SIZE             1  /**< Packet S0 field size in bytes. */
@@ -30,33 +29,12 @@ void ble_init()
                       (RADIO_CRCCNF_SKIP_ADDR_Skip << RADIO_CRCCNF_SKIP_ADDR_Pos); //0x0103;
     NRF_RADIO->CRCINIT = 0x555555;
     NRF_RADIO->CRCPOLY = 0x065B;  
-}
-
-void sendBLEBeacon(int index)
-{
-    uint8_t * beacon_payload = NULL;
-    unsigned int beacon_payload_size;
-    
-    getBLEBeaconPayload(beacon_payload, &beacon_payload_size);
-    
-    ble_beacon[0] = 0x40;//ADV_IND w/ random S0
-    ble_beacon[1] = 6 + beacon_payload_size; //Payload size
-    ble_beacon[2] = 0x00;//Empty field for S1
-    
-    for(int i = 0; i < 4; i++)
-        ble_beacon[3 + i] = NRF_FICR->DEVICEADDR[0] >> (i*8);
-    for(int i = 0; i < 2 ; i++)
-        ble_beacon[7 + i] = NRF_FICR->DEVICEADDR[1] >> (i*8);
-
-    memcpy(&ble_beacon[9], beacon_payload, beacon_payload_size);
-    NRF_RADIO->PACKETPTR = (uint32_t)ble_beacon;
-    NRF_RADIO->TXPOWER   = getBLEBeaconTransmitPower();
-    NRF_RADIO->SHORTS = (RADIO_SHORTS_READY_START_Enabled << RADIO_SHORTS_READY_START_Pos) |
-                        (RADIO_SHORTS_END_DISABLE_Enabled << RADIO_SHORTS_END_DISABLE_Pos);
-    NRF_RADIO->FREQUENCY = getBLERFChannel(index);          
-    NRF_RADIO->DATAWHITEIV = getBLELogicalChannel(index) + 0x40;
+    NRF_RADIO->SHORTS = (RADIO_SHORTS_READY_START_Enabled << RADIO_SHORTS_READY_START_Pos);				
+    NRF_RADIO->FREQUENCY = getBLERFChannel(1);
+    NRF_RADIO->DATAWHITEIV = getBLELogicalChannel(1) + 0x40;
     NRF_RADIO->EVENTS_READY = 0U;
-    NRF_RADIO->TASKS_TXEN   = 1;
+    NRF_RADIO->TASKS_RXEN = 1;
+    NRF_RADIO->PACKETPTR  = (uint32_t)ble_beacon;
 }
 
 int getBLERFChannel(int index)

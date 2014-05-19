@@ -7,7 +7,7 @@ CFLAGS      := -mcpu=cortex-m0 -mthumb -Wall -DBOARD_NRF6310 -DNRF51
 LOCAL_CFLAGS := $(CFLAGS) -std=c99
 LFLAGS      := -L"/usr/arm-none-eabi/lib/armv6-m" -Xlinker -Map=main.map -mcpu=cortex-m0 -T$(PROJ)/gcc_nrf51_blank.ld -mthumb -mabi=aapcs
 
-OBJ_FILES   := ble.o gpio.o hub.o radio.o serial.o state_variables.o time.o main.o
+OBJ_FILES   := gpio.o hub.o radio.o serial.o time.o main.o
 
 default: main.bin main.hex
 

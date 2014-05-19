@@ -9,11 +9,9 @@
 #include "version.h"
 #include "ble.h"
 #include "serial.h"
-#include "hub.h"
 #include "gpio.h"
 #include "time.h"
 #include "radio.h"
-#include "state_variables.h"
 
 
 void clock_init()
@@ -35,7 +33,6 @@ void clock_init()
 int main(void) 
 {
     clock_init();
-    init_state_variables();
     gpio_init();
     radio_init();
     timer0_init();
