@@ -15,11 +15,11 @@ void UART0_IRQHandler(void)
 {
 	if ((NRF_UART0->EVENTS_RXDRDY == 1) && (NRF_UART0->INTENSET & UART_INTENSET_RXDRDY_Msk)) 
     {
+        nrf_gpio_pin_set(LED_4);
         NRF_UART0->EVENTS_RXDRDY = 0;
         uartRxBuffer[rxBufferSize] = NRF_UART0->RXD;
         rxBufferSize++;
         if(rxBufferSize >= HEADER_SIZE) {
-            nrf_gpio_pin_toggle(LED_4);
             uint16_t size = (uartRxBuffer[1] << 8) + uartRxBuffer[2];
             if(rxBufferSize == size + HEADER_SIZE) {
                 MainHeader_t mainHeader = (MainHeader_t)uartRxBuffer[0];
@@ -31,6 +31,7 @@ void UART0_IRQHandler(void)
                         switch (valueHeader) {
                             case FIRMWARE_VERSION:
                             {
+                                nrf_gpio_pin_set(LED_2);
                                 char * fwVersion = "0.0.1";
                                 unsigned char data[] = {ACK, 0, strlen(fwVersion)};
                                 send_array(data, sizeof(data));
@@ -64,14 +65,24 @@ void UART0_IRQHandler(void)
                             }
                             case PERIOD:
                             {
+                                unsigned char data[] = {ACK, 0, 1, getBLEBeaconTransmitPeriod()};
+                                send_array(data, sizeof(data));
                                 break;
                             }
                             case OUTPUT_POWER:
                             {
+                                unsigned char data[] = {ACK, 0, 1, getBLEBeaconTransmitPower()};
+                                send_array(data, sizeof(data));
                                 break;
                             }
                             case PAYLOAD:
                             {
+                                uint8_t buffer[255];
+                                unsigned size = 0;
+                                //getBLEBeaconPayload(buffer, &size);
+                                unsigned char data[] = {ACK, 0, size};
+                                send_array(data, sizeof(data));
+                                send_array(buffer, size);
                                 break;
                             }
                         }
@@ -136,21 +147,15 @@ void uart_init(void)
 {
       nrf_gpio_cfg_output(TX_PIN_NUMBER);
       nrf_gpio_cfg_input(RX_PIN_NUMBER, NRF_GPIO_PIN_NOPULL);
-      nrf_gpio_cfg_output(RTS_PIN_NUMBER);
-      nrf_gpio_cfg_input(CTS_PIN_NUMBER, NRF_GPIO_PIN_NOPULL);  
       NRF_UART0->PSELTXD          = TX_PIN_NUMBER;
       NRF_UART0->PSELRXD          = RX_PIN_NUMBER;
-      NRF_UART0->PSELCTS          = CTS_PIN_NUMBER;
-      NRF_UART0->PSELRTS          = RTS_PIN_NUMBER;
-      NRF_UART0->CONFIG           = (UART_CONFIG_HWFC_Enabled << UART_CONFIG_HWFC_Pos);
       NRF_UART0->BAUDRATE         = (UART_BAUDRATE_BAUDRATE_Baud38400 << UART_BAUDRATE_BAUDRATE_Pos);
       NRF_UART0->ENABLE           = (UART_ENABLE_ENABLE_Enabled << UART_ENABLE_ENABLE_Pos);
-
+      NRF_UART0->INTENSET		  = (UART_INTENSET_RXDRDY_Set << UART_INTENSET_RXDRDY_Pos);
+      NRF_UART0->EVENTS_RXDRDY    = 0;
       NVIC_EnableIRQ(UART0_IRQn);
-      NRF_UART0->INTENSET					=  (UART_INTENSET_RXDRDY_Set << UART_INTENSET_RXDRDY_Pos);
       NRF_UART0->TASKS_STARTTX    = 1;
       NRF_UART0->TASKS_STARTRX    = 1;
-      NRF_UART0->EVENTS_RXDRDY    = 0;
 }
 
 void send_byte(char c)

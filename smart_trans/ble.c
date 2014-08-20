@@ -54,14 +54,6 @@ void setBLEBeaconPayload(const uint8_t * beaconPayload, const unsigned int beaco
     bleStateVariables.BeaconPayloadSize = beaconPayloadSize;
 }
 
-void getBLEBeaconPayload(const uint8_t * beaconPayload, const unsigned int * beaconPayloadSize)
-{
-    (void)beaconPayload;
-    (void)beaconPayloadSize;
-    beaconPayload = bleStateVariables.BeaconPayload;
-    beaconPayloadSize = &bleStateVariables.BeaconPayloadSize;
-}
-
 void setBLEBeaconTransmitPeriod(const uint8_t transmitPeriod)
 {
     bleStateVariables.TransmitPeriod = transmitPeriod;
@@ -84,13 +76,8 @@ int getBLEBeaconTransmitPower()
 
 void sendBLEBeacon(int index)
 {
-    uint8_t * beacon_payload = NULL;
-    unsigned int beacon_payload_size;
-    
-    getBLEBeaconPayload(beacon_payload, &beacon_payload_size);
-    
     ble_beacon[0] = 0x40;//ADV_IND w/ random S0
-    ble_beacon[1] = 6 + beacon_payload_size; //Payload size
+    ble_beacon[1] = 6 + bleStateVariables.BeaconPayloadSize; //Payload size
     ble_beacon[2] = 0x00;//Empty field for S1
     
     for(int i = 0; i < 4; i++)
@@ -98,7 +85,7 @@ void sendBLEBeacon(int index)
     for(int i = 0; i < 2 ; i++)
         ble_beacon[7 + i] = NRF_FICR->DEVICEADDR[1] >> (i*8);
 
-    memcpy(&ble_beacon[9], beacon_payload, beacon_payload_size);
+    memcpy(&ble_beacon[9], bleStateVariables.BeaconPayload, bleStateVariables.BeaconPayloadSize);
     NRF_RADIO->TXPOWER   = getBLEBeaconTransmitPower();
     NRF_RADIO->SHORTS = (RADIO_SHORTS_READY_START_Enabled << RADIO_SHORTS_READY_START_Pos) |
                         (RADIO_SHORTS_END_DISABLE_Enabled << RADIO_SHORTS_END_DISABLE_Pos);

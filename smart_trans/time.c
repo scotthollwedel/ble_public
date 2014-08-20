@@ -12,8 +12,9 @@ void rtc_init()
 {
 	NRF_RTC0->CC[0] = LF_CLOCK_PERIOD*LOOP_PERIOD_IN_MS/1000;
 	NRF_RTC0->INTENSET = (RTC_INTENSET_COMPARE0_Enabled << RTC_INTENSET_COMPARE0_Pos);
-	NRF_RTC0->TASKS_START = 1;
+    NRF_RTC0->EVENTS_COMPARE[0] = 0;
 	NVIC_EnableIRQ(RTC0_IRQn);
+	NRF_RTC0->TASKS_START = 1;
 }
 
 //Configuration TIMER0 with a 31250 us period
@@ -35,10 +36,10 @@ void RTC0_IRQHandler(void)
 		NRF_RTC0->EVENTS_COMPARE[0] = 0;
         if(((count != 0) && (count % getBLEBeaconTransmitPeriod())) == 0) {
             sendBLEBeacon(0);
+            nrf_gpio_pin_toggle(LED_2);
         }
         NRF_RTC0->CC[0] += LF_CLOCK_PERIOD*LOOP_PERIOD_IN_MS/1000;
         count++;
-        //nrf_gpio_pin_toggle(LED_2);
 	}
 }
 

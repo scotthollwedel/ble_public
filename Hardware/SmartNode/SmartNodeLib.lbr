@@ -6,7 +6,7 @@
 <setting alwaysvectorfont="no"/>
 <setting verticaltext="up"/>
 </settings>
-<grid distance="0.001" unitdist="inch" unit="inch" style="lines" multiple="1" display="yes" altdistance="0.025" altunitdist="inch" altunit="inch"/>
+<grid distance="0.05" unitdist="inch" unit="inch" style="lines" multiple="1" display="yes" altdistance="0.025" altunitdist="inch" altunit="inch"/>
 <layers>
 <layer number="1" name="Top" color="4" fill="1" visible="yes" active="yes"/>
 <layer number="2" name="Route2" color="1" fill="3" visible="no" active="yes"/>
@@ -136,7 +136,6 @@
 <rectangle x1="-5.35" y1="-3.45" x2="5.35" y2="3.45" layer="16"/>
 </package>
 <package name="CC3000">
-<rectangle x1="-6.75" y1="-8.15" x2="6.75" y2="8.15" layer="21"/>
 <smd name="43" x="-5.85" y="7.25" dx="1.2" dy="1.2" layer="1"/>
 <smd name="44" x="-5.85" y="-7.25" dx="1.2" dy="1.2" layer="1"/>
 <smd name="46" x="5.85" y="7.25" dx="1.2" dy="1.2" layer="1"/>
@@ -183,16 +182,21 @@
 <smd name="21" x="5.85" y="-3" dx="1.2" dy="0.7" layer="1" rot="R180"/>
 <smd name="20" x="5.85" y="-4.2" dx="1.2" dy="0.7" layer="1" rot="R180"/>
 <smd name="19" x="5.85" y="-5.4" dx="1.2" dy="0.7" layer="1" rot="R180"/>
+<wire x1="-6.75" y1="8.15" x2="-2.65" y2="8.15" width="0.127" layer="21"/>
+<wire x1="-6.75" y1="8.1" x2="-6.75" y2="3.85" width="0.127" layer="21"/>
+<wire x1="2.65" y1="8.15" x2="6.75" y2="8.15" width="0.127" layer="21"/>
+<wire x1="6.75" y1="8.15" x2="6.75" y2="3.85" width="0.127" layer="21"/>
+<wire x1="-6.75" y1="-3.85" x2="-6.75" y2="-8.15" width="0.127" layer="21"/>
+<wire x1="-6.75" y1="-8.15" x2="-2.6" y2="-8.15" width="0.127" layer="21"/>
+<wire x1="2.65" y1="-8.15" x2="6.75" y2="-8.15" width="0.127" layer="21"/>
+<wire x1="6.75" y1="-8.15" x2="6.75" y2="-3.85" width="0.127" layer="21"/>
 </package>
 <package name="AT8010">
-<rectangle x1="-4" y1="-0.5" x2="4" y2="0.5" layer="20"/>
 <smd name="FP" x="-4" y="0" dx="1" dy="1.5" layer="1"/>
 <smd name="NC" x="4" y="0" dx="1" dy="1.5" layer="1"/>
-<rectangle x1="-3.5" y1="-0.5" x2="-2.5" y2="0.5" layer="1"/>
 </package>
 <package name="PCB_ANT">
-<smd name="P$1" x="0" y="-6.9596" dx="0.8128" dy="0.8128" layer="1"/>
-<wire x1="0" y1="8.0518" x2="0" y2="-6.5532" width="0.8128" layer="1"/>
+<smd name="P$1" x="0" y="-0.0396" dx="0.6096" dy="0.6096" layer="1" roundness="100"/>
 </package>
 </packages>
 <symbols>

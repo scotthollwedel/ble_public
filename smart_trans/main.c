@@ -35,8 +35,8 @@ int main(void)
     clock_init();
     gpio_init();
     radio_init();
-    timer0_init();
     rtc_init();
+    timer0_init();
     uart_init();
     ble_init();
     nrf_gpio_pin_set(LED_7);

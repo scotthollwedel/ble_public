@@ -24,7 +24,6 @@ void RADIO_IRQHandler(void)
         NRF_RADIO->EVENTS_DISABLED = 0;
         if(channel_index == 2) {
             channel_index = 0;
-            nrf_gpio_pin_toggle(LED_1);
         }
         else {
             channel_index++;				
