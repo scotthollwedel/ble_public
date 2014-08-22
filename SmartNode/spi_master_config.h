@@ -12,7 +12,7 @@
 #ifndef SPI_MASTER_CONFIG_H
 #define SPI_MASTER_CONFIG_H
 
-#define SPI_OPERATING_FREQUENCY  ( 0x02000000UL << (uint32_t)Freq_125Kbps )  /*!< Slave clock frequency. */
+#define SPI_OPERATING_FREQUENCY  ( 0x02000000UL << (uint32_t)Freq_8Mbps )  /*!< Slave clock frequency. */
 
 /*  SPI0 */
 #define VBAT_SW_EN                0   /*!< GPIO pin for powering up CC3000 */

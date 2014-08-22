@@ -10,7 +10,6 @@ void gpio_init(void)
 {
 	nrf_gpio_range_cfg_output(LED_START, LED_STOP);
     nrf_gpio_cfg_input(BUTTON_0, BUTTON_PULL);
-   // nrf_gpio_cfg_input(SPI_PSELIRQ, NRF_GPIO_PIN_PULLDOWN);
     nrf_gpio_cfg_input(SPI_PSELIRQ, NRF_GPIO_PIN_PULLUP);
     nrf_gpio_pin_clear(VBAT_SW_EN);
     nrf_gpio_cfg_output(VBAT_SW_EN);
@@ -31,12 +30,12 @@ void gpio_power_down_cc3000(void) {
 
 void gpio_enable_cc3000_irq(void)
 {
-    NRF_GPIOTE->INTENSET  = (GPIOTE_INTENSET_IN0_Set << GPIOTE_INTENSET_IN0_Pos); 
+    NRF_GPIOTE->INTENSET = (GPIOTE_INTENSET_IN0_Set << GPIOTE_INTENSET_IN0_Pos); 
 }
 
 void gpio_disable_cc3000_irq(void)
 {
-    NRF_GPIOTE->INTENCLR  = (GPIOTE_INTENSET_IN0_Set << GPIOTE_INTENSET_IN0_Pos); 
+    NRF_GPIOTE->INTENCLR = (GPIOTE_INTENCLR_IN0_Clear << GPIOTE_INTENCLR_IN0_Pos); 
 }
 
 int gpio_get_cc3000_irq(void)

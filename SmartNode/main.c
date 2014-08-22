@@ -37,10 +37,8 @@ const char aucCC3000_prefix[] = {'T', 'T', 'T'};
 volatile unsigned long ulSmartConfigFinished, ulCC3000Connected,ulCC3000DHCP, OkToDoShutDown, ulCC3000DHCP_configured;
 volatile unsigned char ucStopSmartConfig;
 volatile long ulSocket;
-//device name used by smart config response
-char device_name[] = "CC3000";
-//AES key "smartconfigAES16"
-const unsigned char smartconfigkey[] = {0x73,0x6d,0x61,0x72,0x74,0x63,0x6f,0x6e,0x66,0x69,0x67,0x41,0x45,0x53,0x31,0x36};
+char device_name[] = "SPECTRO"; //device name used by smart config response
+const unsigned char smartconfigkey[] = {0x73,0x6d,0x61,0x72,0x74,0x63,0x6f,0x6e,0x66,0x69,0x67,0x41,0x45,0x53,0x31,0x36}; //AES key "smartconfigAES16"
 unsigned char printOnce = 1;
 
 char *sendWLFWPatch(unsigned long *Length)
@@ -156,85 +154,7 @@ void wifi_init(void)
     wlan_init( CC3000_UsynchCallback, sendWLFWPatch, sendDriverPatch, sendBootLoaderPatch, ReadWlanInterruptPin, WlanInterruptEnable, WlanInterruptDisable, WriteWlanPin);
     wlan_start(0);
     wlan_set_event_mask(HCI_EVNT_WLAN_KEEPALIVE|HCI_EVNT_WLAN_UNSOL_INIT|HCI_EVNT_WLAN_ASYNC_PING_REPORT);
-}
-
-void scan_wifi(void) {
-    unsigned long intervalList[] = {2000, 2000, 2000, 2000,
-                                    2000, 2000, 2000, 2000,
-                                    2000, 2000, 2000, 2000,
-                                    2000, 2000, 2000, 2000};
-    if(wlan_ioctl_set_scan_params(1, 100, 100, 5, 0x7ff, -80, 0, 205, intervalList) != 0) {
-        debug_print("ERROR!");
-    }
-    debug_print("scan complete");
-    /*unsigned char results_buffer[128];
-    char buffer[512];
-    
-    uint32_t networksFound = 0xff;
-    while(networksFound > 1) {
-        wlan_ioctl_get_scan_results(0, results_buffer);
-        char * results_ptr = (char *)results_buffer;
-        STREAM_TO_UINT32(results_ptr,0,networksFound)
-        sprintf(buffer, "Networks Found: %lu",networksFound);
-        debug_print(buffer);
-        results_ptr += 4;
-        results_ptr += 4;
-        sprintf(buffer, "Valid: %d\n\rRSSI: %d", (*results_ptr & 0x01), (*results_ptr & (0x7f << 1)) >> 1);
-        debug_print(buffer);
-        results_ptr++;
-
-        int ssidLength = (*results_ptr & (0x3F << 2)) >> 2;
-        sprintf(buffer, "Security Mode: %d\n\rSSID Length: %d", (*results_ptr & 0x03), ssidLength);
-        debug_print(buffer);
-        results_ptr++;
-        results_ptr += 2;
-
-        sprintf(buffer, "SSID: "); 
-        for(int i = 0; i < 32; i++) {
-            if(i < ssidLength)
-                sprintf(buffer, "%s%c", buffer, *results_ptr);
-            results_ptr++;
-        }
-        debug_print(buffer);
-
-        sprintf(buffer, "BSSID"); 
-        for(int i = 0; i < 6; i++) {
-            sprintf(buffer, "%s:%02x", buffer, *results_ptr);
-            results_ptr++;
-        }
-        debug_print(buffer);
-    }*/
-    //debug_print("report finished");
-
-}
-
-void test_connection(void)
-{
-    scan_wifi();
-    wlan_ioctl_set_connection_policy(0,0,0);
-    debug_print("Connecting...");
-    /*char * ssid = "Disalcot";
-    char * key = "9163374991";
-    long key_len = strlen(key);*/
-    char * ssid = "NETGEAR";
-    long ssid_len = strlen(ssid);
-    unsigned char bssid[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    //if(wlan_connect(WLAN_SEC_WPA2, ssid, ssid_len, bssid, (unsigned char *)key, key_len) != 0) {
-    if(wlan_connect(WLAN_SEC_UNSEC, ssid, ssid_len, bssid, NULL, 0) != 0) {
-        debug_print("ERROR!");
-    }
-    while(ulCC3000DHCP == 0);
-    long sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    sockaddr_in toaddr;
-    toaddr.sin_family = AF_INET;
-    toaddr.sin_port = htons(3500);
-    toaddr.sin_addr.s_addr = htonl(0xc0a80102);
-    char * buffer = "hi";
-    while(true) {
-        sendto(sock, buffer, strlen(buffer), 0, (sockaddr *)&toaddr, sizeof(sockaddr_in));  
-        nrf_delay_ms(1000);
-    }
-
+	wlan_ioctl_set_connection_policy(0, 0, 1);	
 }
 
 void StartSmartConfig(void)
@@ -276,26 +196,105 @@ void StartSmartConfig(void)
         mdnsAdvertiser(1,device_name,strlen(device_name));
 }
 
-char wifiMacAddress[6];
-char wifiVersion[2];
+unsigned char wifiMacAddress[6];
+unsigned char wifiVersion[2];
+char * serverAddress = "boiling-shelf-9562.herokuapp.com";
+
+void httpGet(char * payload, int payloadSize) {
+    char txBuffer[1024];
+    char rxBuffer[1024];
+    memset(rxBuffer, 0, sizeof(rxBuffer));
+    strcpy(txBuffer, "GET / HTTP/1.1\r\n");
+    strcat(txBuffer, "Host: ");
+    strcat(txBuffer, serverAddress);
+    strcat(txBuffer, "\r\n");
+    strcat(txBuffer, "Accept: text/html\r\n");
+    strcat(txBuffer, "\r\n");
+    long sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(80);
+    unsigned long ip = 0;
+    gethostbyname(serverAddress, strlen(serverAddress), &ip);
+    addr.sin_addr.s_addr = htonl(ip); 
+    connect(sock, (sockaddr *)&addr, sizeof(sockaddr_in));
+    debug_print("Sending GET...");
+    send(sock, txBuffer, strlen(txBuffer), 0);
+    //Get HTTP Header
+    debug_print("Getting HTTP Header");
+    int i = 0;
+    for(i = 0; i < sizeof(rxBuffer); i++) {
+        recv(sock, &rxBuffer[i], 1, 0);
+        if (NULL != strstr(rxBuffer,"\r\n\r\n")) {
+            break;
+        }
+    }
+    debug_print("Header Received");
+    char * header = strstr(rxBuffer, "Content-Length: ");
+    char * end = strstr(header, "\r\n");
+    unsigned long size = strtoul(header + strlen("Content-Length: "), &end, 10);
+    recv(sock, &rxBuffer[i], size, 0);
+    closesocket(sock);
+    debug_print("Payload Received");
+    debug_print(&rxBuffer[i]);
+}
+
+void httpPut(char * payload, int payloadSize) {
+    char txBuffer[1024];
+    char rxBuffer[1024];
+    memset(rxBuffer,0, sizeof(rxBuffer));
+    strcpy(txBuffer, "PUT / HTTP/1.1\r\n");
+    strcat(txBuffer, "Host: ");
+    strcat(txBuffer, serverAddress);
+    strcat(txBuffer, "\r\n");
+    strcat(txBuffer, "Accept: text/html\r\n");
+    strcat(txBuffer, "\r\n");
+    long sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(80);
+    unsigned long ip = 0;
+    gethostbyname(serverAddress, strlen(serverAddress), &ip);
+    addr.sin_addr.s_addr = htonl(ip); 
+    connect(sock, (sockaddr *)&addr, sizeof(sockaddr_in));
+    debug_print("Sending PUT...");
+    send(sock, txBuffer, strlen(txBuffer), 0);
+    //Get HTTP Header
+    debug_print("Getting HTTP Header");
+    int i = 0;
+    for(i = 0; i < sizeof(rxBuffer); i++) {
+        recv(sock, &rxBuffer[i], 1, 0);
+        if (NULL != strstr(rxBuffer,"\r\n\r\n")) {
+            break;
+        }
+    }
+    debug_print("Header Received");
+    debug_print(rxBuffer);
+    char * header = strstr(rxBuffer, "Content-Length: ");
+    char * end = strstr(header, "\r\n");
+    unsigned long size = strtoul(header + strlen("Content-Length: "), &end, 10);
+    recv(sock, &rxBuffer[i], size, 0);
+    closesocket(sock);
+    debug_print("Payload Received");
+    debug_print(&rxBuffer[i]);
+}
 
 int main(void) 
 {
     clock_init();
-    nrf_delay_ms(10); //wait for power to stabilize
+    gpio_init();
+    nrf_gpio_pin_set(LED_0);
     uart_init();
     debug_print("Application Start");
-    gpio_init();
-    nrf_delay_ms(10); //wait for power to stabilize
     init_spi();
     wifi_init();
     debug_print("Wifi Initialized");
     nvmem_get_mac_address(wifiMacAddress);
     nvmem_read_sp_version(wifiVersion);
-    unsigned char version[2];
-    nrf_gpio_pin_set(LED_0);
-    StartSmartConfig();
+    //StartSmartConfig();
+    while (ulCC3000DHCP == 0); // Wait for DHCP
     nrf_gpio_pin_set(LED_1);
+    httpPut(NULL, 0);
     while(true) {
         __WFI();
     }
