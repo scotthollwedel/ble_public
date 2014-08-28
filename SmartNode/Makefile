@@ -1,10 +1,11 @@
+GIT_VERSION := $(shell git describe --long)
 CC          := arm-none-eabi-gcc
 OBJCOPY     := arm-none-eabi-objcopy
 PROJ        := /home/scott/Projects/BLE/ARM
 INCLUDE     := /home/scott/Projects/BLE/ARM/Include -I.
 #BOARD       := BOARD_NRF6310
 BOARD       := BOARD_PCA10001
-CFLAGS      := -mcpu=cortex-m0 -mthumb -Wall -D$(BOARD) -DNRF51
+CFLAGS      := -mcpu=cortex-m0 -mthumb -Wall -D$(BOARD) -DNRF51 -DVERSION=\"$(GIT_VERSION)\"
 LOCAL_CFLAGS := $(CFLAGS) -std=c99
 LFLAGS      := -L"/usr/arm-none-eabi/lib/armv6-m" -Xlinker -Map=main.map -mcpu=cortex-m0 -T$(PROJ)/gcc_nrf51_blank.ld -mthumb -mabi=aapcs
 VPATH       := WifiDriver JSON

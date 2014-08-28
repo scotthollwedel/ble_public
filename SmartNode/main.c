@@ -295,9 +295,9 @@ void getSystemInfoJson(char * txBuffer)
     size += sprintf(&txBuffer[size], "{");
     ADD_JSON_STRING("macAddress", wifiMacAddress);
     size += sprintf(&txBuffer[size], ",");
-    ADD_JSON_STRING("serialNumber", "333333f3dsf");
+    ADD_JSON_STRING("serialNumber", "33sf3");
     size += sprintf(&txBuffer[size], ",");
-    ADD_JSON_STRING("softwareVersion", "0.0.1r");
+    ADD_JSON_STRING("softwareVersion", VERSION);
     size += sprintf(&txBuffer[size], ",");
     ADD_JSON_STRING("revision", "1");
     size += sprintf(&txBuffer[size], ",");
