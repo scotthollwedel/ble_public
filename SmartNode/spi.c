@@ -187,7 +187,7 @@ SpiOpen(gcSpiHandleRx pfRxHandler)
 
 //*****************************************************************************
 //
-//!  init_spi
+//!  spi_init
 //!
 //!  @param  none
 //!
@@ -197,7 +197,7 @@ SpiOpen(gcSpiHandleRx pfRxHandler)
 //
 //*****************************************************************************
 
-int init_spi(void)
+int spi_init(void)
 {
     /* Configure GPIO pins used for pselsck, pselmosi, pselmiso and pselss for SPI0 */
     nrf_gpio_cfg_output(SPI_PSELSCK0);
@@ -296,8 +296,7 @@ SpiWrite(unsigned char *pUserBuffer, unsigned short usLength)
 	// here forever!
 	if (wlan_tx_buffer[CC3000_TX_BUFFER_SIZE - 1] != CC3000_BUFFER_MAGIC_NUMBER)
 	{
-		while (1)
-			;
+        nrf_gpio_pin_set(LED_0);
 	}
 	
 	if (sSpiInformation.ulSpiState == eSPI_STATE_POWERUP)
@@ -526,8 +525,7 @@ SpiTriggerRxProcessing(void)
 	// here forever!
 	if (sSpiInformation.pRxPacket[CC3000_RX_BUFFER_SIZE - 1] != CC3000_BUFFER_MAGIC_NUMBER)
 	{
-		while (1)
-			;
+        nrf_gpio_pin_set(LED_0);
 	}
 	
 	sSpiInformation.ulSpiState = eSPI_STATE_IDLE;

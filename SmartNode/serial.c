@@ -29,7 +29,7 @@ void uart_init(void)
       NRF_UART0->PSELRXD          = RX_PIN_NUMBER;
       NRF_UART0->PSELCTS          = CTS_PIN_NUMBER;
       NRF_UART0->PSELRTS          = RTS_PIN_NUMBER;
-      NRF_UART0->CONFIG           = (UART_CONFIG_HWFC_Enabled << UART_CONFIG_HWFC_Pos);
+    //NRF_UART0->CONFIG           = (UART_CONFIG_HWFC_Enabled << UART_CONFIG_HWFC_Pos);
       NRF_UART0->BAUDRATE         = (UART_BAUDRATE_BAUDRATE_Baud115200 << UART_BAUDRATE_BAUDRATE_Pos);
       NRF_UART0->ENABLE           = (UART_ENABLE_ENABLE_Enabled << UART_ENABLE_ENABLE_Pos);
 

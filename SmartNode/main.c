@@ -7,6 +7,8 @@
 #include "spi.h"
 #include "nrf_delay.h"
 #include "serial.h"
+#include "time.h"
+#include "ble.h"
 #include "WifiDriver/wlan.h"
 #include "WifiDriver/evnt_handler.h"
 #include "WifiDriver/socket.h"
@@ -159,6 +161,7 @@ void wifi_init(void)
 
 void StartSmartConfig(void)
 {
+    debug_print("Starting smart config");
 	ulSmartConfigFinished = 0;
 	ulCC3000Connected = 0;
 	ulCC3000DHCP = 0;
@@ -186,6 +189,7 @@ void StartSmartConfig(void)
 	// reset the CC3000
 	wlan_ioctl_set_connection_policy(0, 0, 1);	
 	wlan_stop();
+    debug_print("Restarting Wifi");
     nrf_delay_ms(1000);
 	wlan_start(0);
 	// Mask out all non-required events
@@ -196,32 +200,74 @@ void StartSmartConfig(void)
         mdnsAdvertiser(1,device_name,strlen(device_name));
 }
 
-unsigned char wifiMacAddress[6];
+char wifiMacAddress[] = "00:00:00:00:00:00";
 unsigned char wifiVersion[2];
-char * serverAddress = "boiling-shelf-9562.herokuapp.com";
+//char * serverAddress = "boiling-shelf-9562.herokuapp.com";
+char * serverAddress = "192.168.1.17";
 
-void httpGet(char * payload, int payloadSize) {
+typedef enum {
+    HTTP_GET,
+    HTTP_POST,
+    HTTP_PUT
+} HttpType;
+
+
+//Assume that payload is a string
+void httpOperation(HttpType httpType, char * payload) {
     char txBuffer[1024];
     char rxBuffer[1024];
     memset(rxBuffer, 0, sizeof(rxBuffer));
-    strcpy(txBuffer, "GET / HTTP/1.1\r\n");
+    if(httpType == HTTP_GET)
+        strcpy(txBuffer, "GET / HTTP/1.1\r\n");
+    else if(httpType == HTTP_PUT)
+        strcpy(txBuffer, "PUT / HTTP/1.1\r\n");
     strcat(txBuffer, "Host: ");
     strcat(txBuffer, serverAddress);
     strcat(txBuffer, "\r\n");
-    strcat(txBuffer, "Accept: text/html\r\n");
+    if(payload != NULL) {
+        sprintf(&txBuffer[strlen(txBuffer)], "Content-Type: application/json\r\nContent-Length: %d\r\n", strlen(payload));
+    }
+    strcat(txBuffer, "Accept: application/json,text/html\r\n");
     strcat(txBuffer, "\r\n");
     long sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     sockaddr_in addr;
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(80);
+    //addr.sin_port = htons(80);
+    addr.sin_port = htons(5000);
     unsigned long ip = 0;
+    debug_print("Looking up DNS address");
     gethostbyname(serverAddress, strlen(serverAddress), &ip);
     addr.sin_addr.s_addr = htonl(ip); 
     connect(sock, (sockaddr *)&addr, sizeof(sockaddr_in));
-    debug_print("Sending GET...");
-    send(sock, txBuffer, strlen(txBuffer), 0);
+    debug_print("Sending HTTP Request");
+    const int txLength = strlen(txBuffer);
+    int bytesSent = 0;
+    while(bytesSent < txLength) {
+        if(txLength - bytesSent > CC3000_MINIMAL_TX_SIZE) {
+            send(sock, &txBuffer[bytesSent], CC3000_MINIMAL_TX_SIZE, 0);
+            bytesSent += CC3000_MINIMAL_TX_SIZE;
+        }
+        else {
+            send(sock, &txBuffer[bytesSent], txLength - bytesSent, 0);
+            bytesSent = txLength;
+        }
+    }
+    if(payload != NULL) {
+        const int txLength = strlen(payload);
+        int bytesSent = 0;
+        while(bytesSent < txLength) {
+            if(txLength - bytesSent > CC3000_MINIMAL_TX_SIZE) {
+                send(sock, &payload[bytesSent], CC3000_MINIMAL_TX_SIZE, 0);
+                bytesSent += CC3000_MINIMAL_TX_SIZE;
+            }
+            else {
+                send(sock, &payload[bytesSent], txLength - bytesSent, 0);
+                bytesSent = txLength;
+            }
+        }
+    }
+    debug_print("Waiting for Response");
     //Get HTTP Header
-    debug_print("Getting HTTP Header");
     int i = 0;
     for(i = 0; i < sizeof(rxBuffer); i++) {
         recv(sock, &rxBuffer[i], 1, 0);
@@ -229,72 +275,81 @@ void httpGet(char * payload, int payloadSize) {
             break;
         }
     }
-    debug_print("Header Received");
     char * header = strstr(rxBuffer, "Content-Length: ");
     char * end = strstr(header, "\r\n");
     unsigned long size = strtoul(header + strlen("Content-Length: "), &end, 10);
     recv(sock, &rxBuffer[i], size, 0);
+    debug_print("Received HTTP Response");
     closesocket(sock);
     debug_print("Payload Received");
     debug_print(&rxBuffer[i]);
 }
 
-void httpPut(char * payload, int payloadSize) {
-    char txBuffer[1024];
-    char rxBuffer[1024];
-    memset(rxBuffer,0, sizeof(rxBuffer));
-    strcpy(txBuffer, "PUT / HTTP/1.1\r\n");
-    strcat(txBuffer, "Host: ");
-    strcat(txBuffer, serverAddress);
-    strcat(txBuffer, "\r\n");
-    strcat(txBuffer, "Accept: text/html\r\n");
-    strcat(txBuffer, "\r\n");
-    long sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    sockaddr_in addr;
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(80);
-    unsigned long ip = 0;
-    gethostbyname(serverAddress, strlen(serverAddress), &ip);
-    addr.sin_addr.s_addr = htonl(ip); 
-    connect(sock, (sockaddr *)&addr, sizeof(sockaddr_in));
-    debug_print("Sending PUT...");
-    send(sock, txBuffer, strlen(txBuffer), 0);
-    //Get HTTP Header
-    debug_print("Getting HTTP Header");
-    int i = 0;
-    for(i = 0; i < sizeof(rxBuffer); i++) {
-        recv(sock, &rxBuffer[i], 1, 0);
-        if (NULL != strstr(rxBuffer,"\r\n\r\n")) {
-            break;
-        }
-    }
-    debug_print("Header Received");
-    debug_print(rxBuffer);
-    char * header = strstr(rxBuffer, "Content-Length: ");
-    char * end = strstr(header, "\r\n");
-    unsigned long size = strtoul(header + strlen("Content-Length: "), &end, 10);
-    recv(sock, &rxBuffer[i], size, 0);
-    closesocket(sock);
-    debug_print("Payload Received");
-    debug_print(&rxBuffer[i]);
+#define ADD_JSON_STRING(x,y) size += sprintf(&txBuffer[size], "\"%s\": \"%s\"",x,y)
+#define START_JSON_OBJECT(x) size += sprintf(&txBuffer[size], "\"%s\": {", x)
+#define END_JSON_OBJECT() size += sprintf(&txBuffer[size], "}")
+#define ADD_JSON_NUMBER(x,y) size += sprintf(&txBuffer[size], "\"%s\": \"%ld\"",x,y)
+void getSystemInfoJson(char * txBuffer)
+{
+    int size = 0;
+    size += sprintf(&txBuffer[size], "{");
+    ADD_JSON_STRING("macAddress", wifiMacAddress);
+    size += sprintf(&txBuffer[size], ",");
+    ADD_JSON_STRING("serialNumber", "333333f3dsf");
+    size += sprintf(&txBuffer[size], ",");
+    ADD_JSON_STRING("softwareVersion", "0.0.1r");
+    size += sprintf(&txBuffer[size], ",");
+    ADD_JSON_STRING("revision", "1");
+    size += sprintf(&txBuffer[size], ",");
+    ADD_JSON_STRING("model", "SB1");
+    size += sprintf(&txBuffer[size], ",");
+    ADD_JSON_NUMBER("systemTime", 4000L);
+    size += sprintf(&txBuffer[size], ",");
+    ADD_JSON_NUMBER("connectToAPTime", 8000L);
+    size += sprintf(&txBuffer[size], ",");
+    ADD_JSON_NUMBER("connectToServerTime", 1000L); 
+    size += sprintf(&txBuffer[size], ",");
+    ADD_JSON_NUMBER("uptime", 234L);
+    size += sprintf(&txBuffer[size], ",");
+    ADD_JSON_STRING("voltage", "3.0"); //Not sure how this is going to work yet..need float support
+    size += sprintf(&txBuffer[size], ",");
+    ADD_JSON_NUMBER("serverReconnectPeriod", 10324L);
+    size += sprintf(&txBuffer[size], ",");
+    START_JSON_OBJECT("schedule");
+    ADD_JSON_NUMBER("startTime", 0L);
+    size += sprintf(&txBuffer[size], ",");
+    ADD_JSON_NUMBER("beaconPeriod", 1000L);
+    size += sprintf(&txBuffer[size], ",");
+    ADD_JSON_NUMBER("beaconPower", 0L);
+    size += sprintf(&txBuffer[size], ",");
+    ADD_JSON_STRING("beaconUUID", "ab:cd:ed:12:34:12:f2:9e:88:77");
+    END_JSON_OBJECT();
+    sprintf(&txBuffer[size], "}");
 }
 
 int main(void) 
 {
     clock_init();
     gpio_init();
-    nrf_gpio_pin_set(LED_0);
     uart_init();
+    rtc_init();
+    timer0_init();
+    ble_init();
     debug_print("Application Start");
-    init_spi();
+    spi_init();
     wifi_init();
     debug_print("Wifi Initialized");
-    nvmem_get_mac_address(wifiMacAddress);
+    unsigned char mac[6];
+    nvmem_get_mac_address(mac);
+    sprintf(wifiMacAddress, "%02x:%02x:%02x:%02x:%02x:%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
     nvmem_read_sp_version(wifiVersion);
     //StartSmartConfig();
+    debug_print("Waiting for connection");
     while (ulCC3000DHCP == 0); // Wait for DHCP
-    nrf_gpio_pin_set(LED_1);
-    httpPut(NULL, 0);
+    char txBuffer[2048];
+    getSystemInfoJson(txBuffer);
+    debug_print(txBuffer);
+    httpOperation(HTTP_PUT, txBuffer);
     while(true) {
         __WFI();
     }

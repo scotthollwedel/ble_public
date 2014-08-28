@@ -55,7 +55,7 @@ extern void SpiConfigureHwMapping(	unsigned long ulPioPortAddress,
 									unsigned long ulSsiRx,
 									unsigned long ulSsiClck);
 extern void SpiCleanGPIOISR(void);
-extern int init_spi(void);
+int spi_init(void);
 extern void ReadWriteFrame(unsigned char *pTxBuffer, unsigned char *pRxBuffer, unsigned short size);
 extern long TXBufferIsEmpty(void);
 extern long RXBufferIsEmpty(void);
