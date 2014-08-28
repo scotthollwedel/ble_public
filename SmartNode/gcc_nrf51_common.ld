@@ -72,6 +72,13 @@ SECTIONS
 
     __etext = .;
 
+    . = 0x3EF00;
+    .upgrade : { *(.upgrade) } > FLASH
+
+    . = 0x3FF00;
+    .perm : { *(.perm) } > FLASH
+
+
     .data : AT (__etext)
     {
         __data_start__ = .;
