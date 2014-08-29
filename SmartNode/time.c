@@ -3,16 +3,18 @@
 #include "nrf_gpio.h"
 #include "time.h"
 #include "ble.h"
+#include "serial.h"
 
+static unsigned long overflowCnt = 0;
 static unsigned long count = 0;
-static unsigned long time_adjust = 0;
 
 //Configuration RTC with 
 void rtc_init()
 {
 	NRF_RTC0->CC[0] = LF_CLOCK_PERIOD*LOOP_PERIOD_IN_MS/1000;
-	NRF_RTC0->INTENSET = (RTC_INTENSET_COMPARE0_Enabled << RTC_INTENSET_COMPARE0_Pos);
+	NRF_RTC0->INTENSET = (RTC_INTENSET_COMPARE0_Enabled << RTC_INTENSET_COMPARE0_Pos) | (RTC_INTENSET_OVRFLW_Enabled << RTC_INTENSET_OVRFLW_Pos);
     NRF_RTC0->EVENTS_COMPARE[0] = 0;
+    NRF_RTC0->EVENTS_OVRFLW = 0;
 	NVIC_EnableIRQ(RTC0_IRQn);
 	NRF_RTC0->TASKS_START = 1;
 }
@@ -42,10 +44,19 @@ void RTC0_IRQHandler(void)
         NRF_RTC0->CC[0] += LF_CLOCK_PERIOD*LOOP_PERIOD_IN_MS/1000;
         count++;
 	}
+    if((NRF_RTC0->EVENTS_OVRFLW) && (NRF_RTC0->INTENSET & RTC_INTENSET_OVRFLW_Msk))
+    {
+        debug_print("Overflow!");
+        overflowCnt++;
+        NRF_RTC0->EVENTS_OVRFLW = 0;
+    }
 }
 
-unsigned long getCount(void) {
-    return count;
+void getTime(struct tm * time) {
+    const unsigned long long currentTicks = NRF_RTC0->COUNTER;
+    const unsigned long long tickTimeInUs = (currentTicks * 30517)/1000;
+    time->usec = tickTimeInUs % 1000000;
+    time->sec = (tickTimeInUs/1000000) + overflowCnt * 512;
 }
 
 void TIMER0_IRQHandler(void) 

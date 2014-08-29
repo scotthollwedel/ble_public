@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 #include "boards.h"
 #include "gpio.h"
 #include "spi.h"
@@ -230,6 +231,8 @@ void httpOperation(HttpType httpType, char * payload) {
     strcat(txBuffer, "Accept: application/json,text/html\r\n");
     strcat(txBuffer, "\r\n");
     long sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    unsigned long recvTimeout = 10000;//Time in ms
+    setsockopt(sock,SOL_SOCKET, SOCKOPT_RECV_TIMEOUT, &recvTimeout, sizeof(recvTimeout));
     sockaddr_in addr;
     addr.sin_family = AF_INET;
     //addr.sin_port = htons(80);
@@ -285,10 +288,13 @@ void httpOperation(HttpType httpType, char * payload) {
     debug_print(&rxBuffer[i]);
 }
 
+float assocTime = 0.0;
+
 #define ADD_JSON_STRING(x,y) size += sprintf(&txBuffer[size], "\"%s\": \"%s\"",x,y)
 #define START_JSON_OBJECT(x) size += sprintf(&txBuffer[size], "\"%s\": {", x)
 #define END_JSON_OBJECT() size += sprintf(&txBuffer[size], "}")
 #define ADD_JSON_NUMBER(x,y) size += sprintf(&txBuffer[size], "\"%s\": \"%ld\"",x,y)
+#define ADD_JSON_FLOAT(x,y) size += sprintf(&txBuffer[size], "\"%s\": \"%.3f\"",x,y)
 void getSystemInfoJson(char * txBuffer)
 {
     int size = 0;
@@ -303,9 +309,9 @@ void getSystemInfoJson(char * txBuffer)
     size += sprintf(&txBuffer[size], ",");
     ADD_JSON_STRING("model", "SB1");
     size += sprintf(&txBuffer[size], ",");
-    ADD_JSON_NUMBER("systemTime", 4000L);
+    ADD_JSON_NUMBER("systemTime", 0L);
     size += sprintf(&txBuffer[size], ",");
-    ADD_JSON_NUMBER("connectToAPTime", 8000L);
+    ADD_JSON_FLOAT("connectToAPTime", assocTime);
     size += sprintf(&txBuffer[size], ",");
     ADD_JSON_NUMBER("connectToServerTime", 1000L); 
     size += sprintf(&txBuffer[size], ",");
@@ -327,6 +333,12 @@ void getSystemInfoJson(char * txBuffer)
     sprintf(&txBuffer[size], "}");
 }
 
+/*struct PermanentSystemInfo
+{
+    uint8_t model;
+    uint8_t revision;
+} permanentSystemInfo __attribute((section(".perm")));*/
+
 int main(void) 
 {
     clock_init();
@@ -336,6 +348,26 @@ int main(void)
     timer0_init();
     ble_init();
     debug_print("Application Start");
+    /*unsigned long onPeriod = 1;
+    bool increase = true;
+    #define PERIOD 1000
+    while(1) {
+        if(onPeriod == PERIOD - 1) {
+            increase = false;
+        }
+        else if(onPeriod == 1) {
+            increase = true;
+        }
+        nrf_gpio_pin_set(LED_0);
+        nrf_delay_us(onPeriod);
+        nrf_gpio_pin_clear(LED_0);
+        nrf_delay_us(PERIOD - onPeriod);
+        if(increase)
+            onPeriod++;
+        else
+            onPeriod--;
+    }
+    return 0; */
     spi_init();
     wifi_init();
     debug_print("Wifi Initialized");
@@ -345,7 +377,14 @@ int main(void)
     nvmem_read_sp_version(wifiVersion);
     //StartSmartConfig();
     debug_print("Waiting for connection");
+    struct tm startTime;
+    getTime(&startTime);
     while (ulCC3000DHCP == 0); // Wait for DHCP
+    struct tm endTime;
+    getTime(&endTime);
+    float startTimeNum = (float)startTime.sec + ((float)startTime.usec/1000000);
+    float endTimeNum = (float)endTime.sec + ((float)endTime.usec/1000000);
+    assocTime = endTimeNum - startTimeNum;
     char txBuffer[2048];
     getSystemInfoJson(txBuffer);
     debug_print(txBuffer);
