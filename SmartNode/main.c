@@ -53,9 +53,9 @@ void httpOperation(HttpType httpType, char * payload) {
     char rxBuffer[1024];
     memset(rxBuffer, 0, sizeof(rxBuffer));
     if(httpType == HTTP_GET)
-        strcpy(txBuffer, "GET / HTTP/1.1\r\n");
+        strcpy(txBuffer, "GET /v1/devices HTTP/1.1\r\n");
     else if(httpType == HTTP_PUT)
-        strcpy(txBuffer, "PUT / HTTP/1.1\r\n");
+        strcpy(txBuffer, "PUT /v1/devices HTTP/1.1\r\n");
     strcat(txBuffer, "Host: ");
     strcat(txBuffer, serverAddress);
     strcat(txBuffer, "\r\n");
@@ -63,6 +63,7 @@ void httpOperation(HttpType httpType, char * payload) {
         sprintf(&txBuffer[strlen(txBuffer)], "Content-Type: application/json\r\nContent-Length: %d\r\n", strlen(payload));
     }
     strcat(txBuffer, "Accept: application/json,text/html\r\n");
+    strcat(txBuffer, "X-Requested-With: XMLHttpRequest\r\n");
     strcat(txBuffer, "\r\n");
     long sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     unsigned long recvTimeout = 10000;//Time in ms
@@ -122,7 +123,9 @@ void httpOperation(HttpType httpType, char * payload) {
     debug_print(&rxBuffer[i]);
 }
 
+/* Static system analytics variables */
 float assocTime = 0.0;
+long serverConnectionCount = 0;
 
 #define START_JSON_OBJECT_UNNAMED() size += sprintf(&txBuffer[size], "{")
 #define ADD_JSON_STRING(x,y) size += sprintf(&txBuffer[size], "\"%s\": \"%s\"",x,y)
@@ -151,25 +154,17 @@ void getSystemInfoJson(char * txBuffer)
     JSON_NEXT_RECORD();
     ADD_JSON_FLOAT("connectToAPTime", assocTime);
     JSON_NEXT_RECORD();
-    ADD_JSON_NUMBER("connectToServerTime", 1000L); 
+    ADD_JSON_FLOAT("resolveDNSTime", 1.2);
+    JSON_NEXT_RECORD();
+    ADD_JSON_FLOAT("connectToServerTime", 2.3); 
     JSON_NEXT_RECORD();
     ADD_JSON_NUMBER("uptime", getUptime());
     JSON_NEXT_RECORD();
-    ADD_JSON_FLOAT("voltage", getBattVoltage());
+    ADD_JSON_FLOAT("batteryVoltage", getBattVoltage());
     JSON_NEXT_RECORD();
-    ADD_JSON_NUMBER("serverReconnectPeriod", 10324L);
+    ADD_JSON_NUMBER("beaconTransmits", getBeaconCount());
     JSON_NEXT_RECORD();
-    START_JSON_ARRAY("schedule");
-    START_JSON_OBJECT_UNNAMED();
-    ADD_JSON_NUMBER("startTime", 0L);
-    JSON_NEXT_RECORD();
-    ADD_JSON_NUMBER("beaconPeriod", 1000L);
-    JSON_NEXT_RECORD();
-    ADD_JSON_NUMBER("beaconPower", 0L);
-    JSON_NEXT_RECORD();
-    ADD_JSON_STRING("beaconUUID", "ab:cd:ed:12:34:12:f2:9e:88:77");
-    END_JSON_OBJECT();
-    END_JSON_ARRAY();
+    ADD_JSON_NUMBER("serverConnections",serverConnectionCount);
     END_JSON_OBJECT();
 }
 
@@ -179,7 +174,7 @@ void getSystemInfoJson(char * txBuffer)
     uint8_t revision;
 } permanentSystemInfo __attribute((section(".perm")));*/
 
-void connectToServer(void)
+bool reportStatusToServer(void)
 {
     wifi_init();
     debug_print("Waiting for connection");
@@ -196,6 +191,7 @@ void connectToServer(void)
     getSystemInfoJson(txBuffer);
     httpOperation(HTTP_PUT, txBuffer);
     wlan_stop();
+    return true;
 }
 
 bool reportStatus = true;
@@ -203,6 +199,7 @@ void setReportStatus()
 {
     reportStatus = true;
 }
+
 
 int main(void) 
 {
@@ -225,7 +222,10 @@ int main(void)
     while(true) {
         if(reportStatus) {
             reportStatus = false;
-            connectToServer();
+            serverConnectionCount++;
+            if(true == reportStatusToServer()) {
+                resetBeaconCount();
+            }
         }
         __WFI();
     }

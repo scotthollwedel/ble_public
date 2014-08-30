@@ -7,6 +7,7 @@
 
 static unsigned long overflowCnt = 0;
 static unsigned long count = 0;
+long beaconCount = 0;
 
 //Configuration RTC with 
 void rtc_init()
@@ -38,8 +39,8 @@ void RTC0_IRQHandler(void)
     {
 		NRF_RTC0->EVENTS_COMPARE[0] = 0;
         if(((count != 0) && (count % getBLEBeaconTransmitPeriod())) == 0) {
+            beaconCount++;
             sendBLEBeacon(0);
-            nrf_gpio_pin_toggle(LED_1);
         }
         NRF_RTC0->CC[0] += LF_CLOCK_PERIOD*LOOP_PERIOD_IN_MS/1000;
         count++;
@@ -57,6 +58,14 @@ void getTime(struct tm * time) {
     const unsigned long long tickTimeInUs = (currentTicks * 30517)/1000;
     time->usec = tickTimeInUs % 1000000;
     time->sec = (tickTimeInUs/1000000) + overflowCnt * 512;
+}
+
+long getBeaconCount() {
+    return beaconCount;
+}
+
+void resetBeaconCount() {
+    beaconCount = 0;
 }
 
 long getUptime() {
