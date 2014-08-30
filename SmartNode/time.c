@@ -59,6 +59,10 @@ void getTime(struct tm * time) {
     time->sec = (tickTimeInUs/1000000) + overflowCnt * 512;
 }
 
+long getUptime() {
+    return count * LOOP_PERIOD_IN_MS/1000;
+}
+
 void TIMER0_IRQHandler(void) 
 {
 	if((NRF_TIMER0->EVENTS_COMPARE[0]) &&

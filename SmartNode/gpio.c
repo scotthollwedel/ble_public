@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "main.h"
 #include "nrf_gpio.h"
 #include "boards.h"
 #include "spi_master_config.h"
@@ -18,6 +19,10 @@ void gpio_init(void)
 	NRF_GPIOTE->CONFIG[0] =  (GPIOTE_CONFIG_POLARITY_HiToLo << GPIOTE_CONFIG_POLARITY_Pos)
                            | (SPI_PSELIRQ << GPIOTE_CONFIG_PSEL_Pos)  
                            | (GPIOTE_CONFIG_MODE_Event << GPIOTE_CONFIG_MODE_Pos);
+    NRF_GPIOTE->CONFIG[1] = (GPIOTE_CONFIG_POLARITY_LoToHi << GPIOTE_CONFIG_POLARITY_Pos)
+                           | (BUTTON_0 << GPIOTE_CONFIG_PSEL_Pos)
+                           | (GPIOTE_CONFIG_MODE_Event << GPIOTE_CONFIG_MODE_Pos);
+    NRF_GPIOTE->INTENSET = (GPIOTE_INTENSET_IN1_Set << GPIOTE_INTENSET_IN1_Pos);
 }
 
 void gpio_power_up_cc3000(void) {
@@ -51,5 +56,12 @@ void GPIOTE_IRQHandler(void)
     {
         NRF_GPIOTE->EVENTS_IN[0] = 0;
         IntSpiGPIOHandler();
+    }
+
+    if ((NRF_GPIOTE->EVENTS_IN[1] == 1) &&
+        (NRF_GPIOTE->INTENSET & GPIOTE_INTENSET_IN1_Msk))
+    {
+        NRF_GPIOTE->EVENTS_IN[1] = 0;
+        setReportStatus();
     }
 }
