@@ -9,7 +9,7 @@ CFLAGS      := -mcpu=cortex-m0 -mthumb -Wall -D$(BOARD) -DNRF51 -DVERSION=\"$(GI
 LOCAL_CFLAGS := $(CFLAGS) -std=c99
 LFLAGS      := -L"/usr/arm-none-eabi/lib/armv6-m" -Xlinker -Map=main.map -mcpu=cortex-m0 -T$(PROJ)/gcc_nrf51_blank.ld -mthumb -mabi=aapcs
 VPATH       := WifiDriver JSON
-OBJ_FILES   := main.o gpio.o serial.o spi.o time.o ble.o adc.o wifi.o cc3000_common.o evnt_handler.o hci.o netapp.o nvmem.o socket.o wlan.o security.o
+OBJ_FILES   := main.o gpio.o serial.o spi.o time.o ble.o adc.o wifi.o schedule.o backend_connection.o cc3000_common.o evnt_handler.o hci.o netapp.o nvmem.o socket.o wlan.o security.o jsmn.o
 
 default: main.bin main.hex 
 

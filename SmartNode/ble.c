@@ -64,9 +64,34 @@ int getBLEBeaconTransmitPeriod ()
     return bleStateVariables.TransmitPeriod;
 }
 
-void setBLEBeaconTransmitPower(const uint8_t transmitPower)
+void setBLEBeaconTransmitPower(const int8_t transmitPower)
 {
-    bleStateVariables.TransmitPower = transmitPower;
+    uint8_t blePower = RADIO_TXPOWER_TXPOWER_0dBm; 
+    switch(transmitPower)
+    {
+        case 0:
+            blePower = RADIO_TXPOWER_TXPOWER_0dBm;
+            break;
+        case -4:
+            blePower = RADIO_TXPOWER_TXPOWER_Neg4dBm;
+            break;
+        case -8:
+            blePower = RADIO_TXPOWER_TXPOWER_Neg8dBm;
+            break;
+        case -12:
+            blePower = RADIO_TXPOWER_TXPOWER_Neg12dBm;
+            break;
+        case -16:
+            blePower = RADIO_TXPOWER_TXPOWER_Neg16dBm;
+            break;
+        case -20:
+            blePower = RADIO_TXPOWER_TXPOWER_Neg20dBm;
+            break;
+        case -30:
+            blePower = RADIO_TXPOWER_TXPOWER_Neg30dBm;
+            break;
+    }
+    bleStateVariables.TransmitPower = blePower;
 }
 
 int getBLEBeaconTransmitPower()

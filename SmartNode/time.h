@@ -14,7 +14,13 @@ struct tm
 void rtc_init(void);
 void timer0_init(void);
 void getTime(struct tm * time);
-long getBeaconCount();
-void resetBeaconCount();
-long getUptime();
+long getBeaconCount(void);
+void resetBeaconCount(void);
+long getUptime(void);
+void startTimer(void);
+void setSystemTime(const long newTime);
+const long getSystemTime();
+float endTimerAndGetResult(void);
+void setServerReconnectPeriod(int minutesBetweenConnects);
+void setServerReconnectTOD(void);
 #endif
