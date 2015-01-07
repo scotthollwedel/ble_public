@@ -1,4 +1,0 @@
-#define MAJOR 0x00
-#define MINOR 0x00
-#define FEATURE 0x00
-#define BUILD 0x01

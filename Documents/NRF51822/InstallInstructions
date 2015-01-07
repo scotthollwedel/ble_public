@@ -1,2 +1,0 @@
-JLinkExe -SelectEmuBySn 518004755 -device nrf51822 -if swd -speed 1000
-loadbin main.bin 0

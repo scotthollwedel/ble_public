@@ -1,2 +1,0 @@
-1. Get GCC from: https://launchpad.net/gcc-arm-embedded
-2. Get J-Link Debugger from http://www.segger.com/jlink-software.html using Serial Number 518004755
